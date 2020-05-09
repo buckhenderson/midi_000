@@ -1,21 +1,32 @@
 
- int velocity = 100;//velocity of MIDI notes, must be between 0 and 127
+int velocity = 100;//velocity of MIDI notes, must be between 0 and 127
  //higher velocity usually makes MIDI instruments louder
 
- int noteON = 144;//144 = 10010000 in binary, note on command
- int noteOFF = 128;//128 = 10000000 in binary, note off command
+int noteON = 144;//144 = 10010000 in binary, note on command
+int noteOFF = 128;//128 = 10000000 in binary, note off command
+int oldButtonState = 0;
+int newButtonState = 0;
+int buttonPin = 2;
+int ledPin = 13;
 
 void setup() {
   //  Set MIDI baud rate:
   Serial.begin(38400);
+pinMode(ledPin, OUTPUT);
+pinMode(buttonPin, INPUT);
+oldButtonState = digitalRead(buttonPin);
 }
 
 void loop() {
-  for (int note=50;note<70;note++) {//from note 50 (D3) to note 69 (A4)
-    MIDImessage(noteON, note, velocity);//turn note on
-    delay(300);//hold note for 300ms
-    MIDImessage(noteOFF, note, velocity);//turn note off
-    delay(200);//wait 200ms until triggering next note
+  newButtonState = digitalRead(buttonPin);
+  if (newButtonState == HIGH && oldButtonState == LOW){
+    digitalWrite(ledPin, HIGH);
+    MIDImessage(noteON, 60, velocity);
+    oldButtonState = newButtonState;
+  } else if (newButtonState == LOW && oldButtonState == HIGH){
+    digitalWrite(ledPin, LOW);
+    MIDImessage(noteOFF, 60, velocity);
+    oldButtonState = newButtonState;
   }
 }
 
