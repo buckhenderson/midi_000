@@ -4,29 +4,46 @@ int velocity = 100;//velocity of MIDI notes, must be between 0 and 127
 
 int noteON = 144;//144 = 10010000 in binary, note on command
 int noteOFF = 128;//128 = 10000000 in binary, note off command
-int oldButtonState = 0;
-int newButtonState = 0;
-int buttonPin = 2;
-int ledPin = 13;
+int oldButton0State = 0;
+int newButton0State = 0;
+int button0Pin = 2;
+int led0Pin = 13;
+int oldButton1State = 0;
+int newButton1State = 0;
+int button1Pin = 3;
+int led1Pin = 12;
 
 void setup() {
   //  Set MIDI baud rate:
   Serial.begin(38400);
-pinMode(ledPin, OUTPUT);
-pinMode(buttonPin, INPUT);
-oldButtonState = digitalRead(buttonPin);
+pinMode(led0Pin, OUTPUT);
+pinMode(button0Pin, INPUT);
+oldButton0State = digitalRead(button0Pin);
+pinMode(led1Pin, OUTPUT);
+pinMode(button1Pin, INPUT);
+oldButton1State = digitalRead(button0Pin);
 }
 
 void loop() {
-  newButtonState = digitalRead(buttonPin);
-  if (newButtonState == HIGH && oldButtonState == LOW){
-    digitalWrite(ledPin, HIGH);
+  newButton0State = digitalRead(button0Pin);
+  if (newButton0State == HIGH && oldButton0State == LOW){
+    digitalWrite(led0Pin, HIGH);
     MIDImessage(noteON, 60, velocity);
-    oldButtonState = newButtonState;
-  } else if (newButtonState == LOW && oldButtonState == HIGH){
-    digitalWrite(ledPin, LOW);
+    oldButton0State = newButton0State;
+  } else if (newButton0State == LOW && oldButton0State == HIGH){
+    digitalWrite(led0Pin, LOW);
     MIDImessage(noteOFF, 60, velocity);
-    oldButtonState = newButtonState;
+    oldButton0State = newButton0State;
+  }
+  newButton1State = digitalRead(button1Pin);
+  if (newButton1State == HIGH && oldButton1State == LOW){
+    digitalWrite(led1Pin, HIGH);
+    MIDImessage(noteON, 62, velocity);
+    oldButton1State = newButton1State;
+  } else if (newButton1State == LOW && oldButton1State == HIGH){
+    digitalWrite(led1Pin, LOW);
+    MIDImessage(noteOFF, 62, velocity);
+    oldButton1State = newButton1State;
   }
 }
 
