@@ -7,19 +7,15 @@ int noteOFF = 128;//128 = 10000000 in binary, note off command
 int oldButton0State = 0;
 int newButton0State = 0;
 int button0Pin = 2;
-int led0Pin = 13;
 int oldButton1State = 0;
 int newButton1State = 0;
 int button1Pin = 3;
-int led1Pin = 12;
 
 void setup() {
   //  Set MIDI baud rate:
   Serial.begin(38400);
-pinMode(led0Pin, OUTPUT);
 pinMode(button0Pin, INPUT);
 oldButton0State = digitalRead(button0Pin);
-pinMode(led1Pin, OUTPUT);
 pinMode(button1Pin, INPUT);
 oldButton1State = digitalRead(button0Pin);
 }
