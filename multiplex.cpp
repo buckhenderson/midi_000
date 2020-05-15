@@ -29,7 +29,6 @@ void setup() {
   pinMode(addressD, OUTPUT);
   // Prepare read pin
   pinMode(readMux, INPUT);
-  pinMode()
 }
 
 void loop() {
@@ -61,7 +60,6 @@ void loop() {
         oldState[i] = newState[i];
     }
   }
-  delay(1000);
 }
 
 //send MIDI message
