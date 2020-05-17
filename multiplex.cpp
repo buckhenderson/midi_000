@@ -1,10 +1,16 @@
 int totalChannels = 5;
 int shifterN = 2;
+int controlN = 1;
 int noteON = 144;//144 = 10010000 in binary, note on command
 int noteOFF = 128;//128 = 10000000 in binary, note off command
+int controlChange = 176;//176 = 10110000 in binary, control change command
 int velocity = 100;
+int pedalOn = 127;
+int pedalOff = 0;
 int shiftUp = 5;
 int shiftDown = 6;
+int pedal = 7;
+int pedalMIDI = 64;
 
 int addressA = 2;
 int addressB = 3;
@@ -12,9 +18,9 @@ int addressC = 4;
 int addressD = 5;
 int readMux = 6;
 
-int buttons[7] = {};
-int oldState[7] = {};
-int newState[7] = {};
+int buttons[8] = {};
+int oldState[8] = {};
+int newState[8] = {};
 
 
 int A = 0;      //Address pin A
@@ -75,6 +81,17 @@ void loop() {
       oldState[i] = newState[i];
     }
     if (newState[i] == 0 && oldState[i] == 1){
+        oldState[i] = newState[i];
+    }
+  }
+  for(int i=(totalChannels + shifterN); i<(totalChannels + shifterN + controlN); i++){
+    writeMux(i);
+    newState[i] = digitalRead(readMux);
+    if (newState[i] == 1 && oldState[i] == 0){
+        MIDImessage(controlChange, pedalMIDI, pedalOn);
+        oldState[i] = newState[i];
+    } else if (newState[i] == 0 && oldState[i] == 1){
+        MIDImessage(controlChange, pedalMIDI, pedalOff);
         oldState[i] = newState[i];
     }
   }
