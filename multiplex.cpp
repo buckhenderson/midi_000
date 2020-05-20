@@ -11,6 +11,8 @@ int shiftUp = 5;
 int shiftDown = 6;
 int pedal = 7;
 int pedalMIDI = 64;
+int instrumentShift = 8;
+int switchMIDI = 1;
 
 int addressA = 2;
 int addressB = 3;
@@ -18,9 +20,9 @@ int addressC = 4;
 int addressD = 5;
 int readMux = 6;
 
-int buttons[8] = {};
-int oldState[8] = {};
-int newState[8] = {};
+int buttons[9] = {};
+int oldState[9] = {};
+int newState[9] = {};
 
 
 int A = 0;      //Address pin A
@@ -96,6 +98,16 @@ void loop() {
     }
   }
 
+  for(int i=(totalChannels + shifterN + controlN); i<(totalChannels + shifterN + controlN + 1); i++){
+    writeMux(i);
+    newState[i] = digitalRead(readMux);
+    if (newState[i] == 1 && oldState[i] == 0){
+      MIDImessage(controlChange, switchMIDI, pedalOn);
+      oldState[i] = newState[i];
+    } else if (newState[i] == 0 && oldState[i] == 1){
+      oldState[i] = newState[i];
+    }
+    }
 }
 
 //send MIDI message
