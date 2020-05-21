@@ -13,6 +13,12 @@ int pedal = 7;
 int pedalMIDI = 64;
 int instrumentShift = 8;
 int switchMIDI = 1;
+int dial00 = A0;
+int dial00ReadVal;
+float dialScale = 127.0 / 1023.0;
+int processedDial00;
+int dial00OldState;
+int dial00NewState;
 
 int addressA = 2;
 int addressB = 3;
@@ -40,8 +46,9 @@ void setup() {
   pinMode(addressB, OUTPUT);
   pinMode(addressC, OUTPUT);
   pinMode(addressD, OUTPUT);
-  // Prepare read pin
+  // Prepare read pins
   pinMode(readMux, INPUT);
+  pinMode(dial00, INPUT);
 }
 
 void writeMux(int i){
@@ -107,6 +114,12 @@ void loop() {
     } else if (newState[i] == 0 && oldState[i] == 1){
       oldState[i] = newState[i];
     }
+    }
+    dial00NewState = analogRead(dial00);
+    if (dial00OldState != dial00NewState){
+      processedDial00 = dialScale * dial00ReadVal;
+      MIDImessage(controlChange, 2, processedDial00);
+      dial00OldState = dial00NewState;
     }
 }
 
