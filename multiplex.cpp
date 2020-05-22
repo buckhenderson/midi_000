@@ -116,8 +116,8 @@ void loop() {
     }
     }
     dial00NewState = analogRead(dial00);
-    if (dial00OldState != dial00NewState){
-      processedDial00 = dialScale * dial00ReadVal;
+    if (abs(dial00OldState - dial00NewState) > 5){
+      processedDial00 = dialScale * dial00NewState;
       MIDImessage(controlChange, 2, processedDial00);
       dial00OldState = dial00NewState;
     }
