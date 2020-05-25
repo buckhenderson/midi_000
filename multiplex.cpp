@@ -1,9 +1,20 @@
+#include "Encoder_Polling.h"
+
+const int encoderPin_A = 20;
+const int encoderPin_B = 21;
+
+int processedDial;
+int channelVal = 0;
+int channelN = 3;
+int counter = 0;
+int totalDials = 2; //number of analog dials
+int totalRows = 2;  //number of theoretical rows of dials (these will be switched by the rotary encoder)
 int totalChannels = 5;
 int shifterN = 2;
 int controlN = 1;
-int noteON = 144;//144 = 10010000 in binary, note on command
-int noteOFF = 128;//128 = 10000000 in binary, note off command
-int controlChange = 176;//176 = 10110000 in binary, control change command
+int noteON = 144;        //144 = 10010000 in binary, note on command
+int noteOFF = 128;       //128 = 10000000 in binary, note off command
+int controlChange = 176; //176 = 10110000 in binary, control change command
 int velocity = 100;
 int pedalOn = 127;
 int pedalOff = 0;
@@ -19,116 +30,204 @@ float dialScale = 127.0 / 1023.0;
 int processedDial00;
 int dial00OldState;
 int dial00NewState;
-
-int addressA = 2;
-int addressB = 3;
-int addressC = 4;
-int addressD = 5;
-int readMux = 6;
+//set up multiplexers
+//digital
+int digitalAddressA = 2;
+int digitalAddressB = 3;
+int digitalAddressC = 4;
+int digitalAddressD = 5;
+int readDigitalMux = 6;
+//analog
+int analogAddressA = 27;
+int analogAddressB = 29;
+int analogAddressC = 31;
+int readAnalogMux = A1;
+int readAnalogValue;
 
 int buttons[9] = {};
-int oldState[9] = {};
-int newState[9] = {};
+int digitalOldState[9] = {};
+int digitalNewState[9] = {};
 
+int dials[2] = {};
+int analogOldState[2];
+int analogNewState[2];
 
-int A = 0;      //Address pin A
-int B = 0;      //Address pin B
-int C = 0;      //Address pin C
-int D = 0;      //Address pin D
+int digitalA = 0; //Address pin A
+int digitalB = 0; //Address pin B
+int digitalC = 0; //Address pin C
+int digitalD = 0; //Address pin D
+int analogA = 0;
+int analogB = 0;
+int analogC = 0;
 
 int note0 = 60;
 
-void setup() {
-  Serial.begin(38400);
-  //Serial.begin(9600);
-  // Prepare address pins for output
-  pinMode(addressA, OUTPUT);
-  pinMode(addressB, OUTPUT);
-  pinMode(addressC, OUTPUT);
-  pinMode(addressD, OUTPUT);
-  // Prepare read pins
-  pinMode(readMux, INPUT);
-  pinMode(dial00, INPUT);
+void setup()
+{
+    Serial.begin(38400);
+    encoder_begin(encoderPin_A, encoderPin_B); // Start the decoder
+    //Serial.begin(9600);
+    // Prepare address pins for output
+    pinMode(digitalAddressA, OUTPUT);
+    pinMode(digitalAddressB, OUTPUT);
+    pinMode(digitalAddressC, OUTPUT);
+    pinMode(digitalAddressD, OUTPUT);
+    pinMode(analogAddressA, OUTPUT);
+    pinMode(analogAddressB, OUTPUT);
+    pinMode(analogAddressC, OUTPUT);
+    // Prepare read pins
+    pinMode(readDigitalMux, INPUT);
+    pinMode(readAnalogMux, INPUT);
+    pinMode(dial00, INPUT);
 }
 
-void writeMux(int i){
-    A = bitRead(i,0); //Take first bit from binary value of i channel.
-    B = bitRead(i,1); //Take second bit from binary value of i channel.
-    C = bitRead(i,2); //Take third bit from value of i channel.
-    D = bitRead(i,3); //Take third bit from value of i channel.
+void writeDigitalMux(int i)
+{
+    digitalA = bitRead(i, 0); //Take first bit from binary value of i channel.
+    digitalB = bitRead(i, 1); //Take second bit from binary value of i channel.
+    digitalC = bitRead(i, 2); //Take third bit from value of i channel.
+    digitalD = bitRead(i, 3); //Take fourth bit from value of i channel.
 
     //Write address to mux
-    digitalWrite(addressA, A);
-    digitalWrite(addressB, B);
-    digitalWrite(addressC, C);
-    digitalWrite(addressD, D);
+    digitalWrite(digitalAddressA, digitalA);
+    digitalWrite(digitalAddressB, digitalB);
+    digitalWrite(digitalAddressC, digitalC);
+    digitalWrite(digitalAddressD, digitalD);
 }
 
-void loop() {
-  //Select each pin and read value
-  for(int i=0; i<totalChannels; i++){
-    writeMux(i);
-    newState[i] = digitalRead(readMux);
-    if (newState[i] == 1 && oldState[i] == 0){
-        MIDImessage(noteON, note0 + i, velocity);
-        oldState[i] = newState[i];
-    } else if (newState[i] == 0 && oldState[i] == 1){
-        MIDImessage(noteOFF, note0 + i, velocity);
-        oldState[i] = newState[i];
-    }
-  }
-  for(int i=totalChannels; i<(totalChannels + shifterN); i++){
-    writeMux(i);
-    newState[i] = digitalRead(readMux);
-    if (newState[i] == 1 && oldState[i] == 0){
-      if (i == shiftUp){
-        note0++;
-      }
-      if (i == shiftDown){
-        note0--;
-      }
-      oldState[i] = newState[i];
-    }
-    if (newState[i] == 0 && oldState[i] == 1){
-        oldState[i] = newState[i];
-    }
-  }
-  for(int i=(totalChannels + shifterN); i<(totalChannels + shifterN + controlN); i++){
-    writeMux(i);
-    newState[i] = digitalRead(readMux);
-    if (newState[i] == 1 && oldState[i] == 0){
-        MIDImessage(controlChange, pedalMIDI, pedalOn);
-        oldState[i] = newState[i];
-    } else if (newState[i] == 0 && oldState[i] == 1){
-        MIDImessage(controlChange, pedalMIDI, pedalOff);
-        oldState[i] = newState[i];
-    }
-  }
+void writeAnalogMux(int i)
+{
+    analogA = bitRead(i, 0); //Take first bit from binary value of i channel.
+    analogB = bitRead(i, 1); //Take second bit from binary value of i channel.
+    analogC = bitRead(i, 2); //Take third bit from value of i channel.
 
-  for(int i=(totalChannels + shifterN + controlN); i<(totalChannels + shifterN + controlN + 1); i++){
-    writeMux(i);
-    newState[i] = digitalRead(readMux);
-    if (newState[i] == 1 && oldState[i] == 0){
-      MIDImessage(controlChange, switchMIDI, pedalOn);
-      oldState[i] = newState[i];
-    } else if (newState[i] == 0 && oldState[i] == 1){
-      oldState[i] = newState[i];
+    //Write address to mux
+    digitalWrite(analogAddressA, analogA);
+    digitalWrite(analogAddressB, analogB);
+    digitalWrite(analogAddressC, analogC);
+}
+
+void loop()
+{
+    //read keys
+    for (int i = 0; i < totalChannels; i++)
+    {
+        writeDigitalMux(i);
+        digitalNewState[i] = digitalRead(readDigitalMux);
+        if (digitalNewState[i] == 1 && digitalOldState[i] == 0)
+        {
+            MIDImessage(noteON, note0 + i, velocity);
+            digitalOldState[i] = digitalNewState[i];
+        }
+        else if (digitalNewState[i] == 0 && digitalOldState[i] == 1)
+        {
+            MIDImessage(noteOFF, note0 + i, velocity);
+            digitalOldState[i] = digitalNewState[i];
+        }
     }
+    //read shifter
+    for (int i = totalChannels; i < (totalChannels + shifterN); i++)
+    {
+        writeDigitalMux(i);
+        digitalNewState[i] = digitalRead(readDigitalMux);
+        if (digitalNewState[i] == 1 && digitalOldState[i] == 0)
+        {
+            if (i == shiftUp)
+            {
+                note0++;
+            }
+            if (i == shiftDown)
+            {
+                note0--;
+            }
+            digitalOldState[i] = digitalNewState[i];
+        }
+        if (digitalNewState[i] == 0 && digitalOldState[i] == 1)
+        {
+            digitalOldState[i] = digitalNewState[i];
+        }
     }
+    //read pedal
+    for (int i = (totalChannels + shifterN); i < (totalChannels + shifterN + controlN); i++)
+    {
+        writeDigitalMux(i);
+        digitalNewState[i] = digitalRead(readDigitalMux);
+        if (digitalNewState[i] == 1 && digitalOldState[i] == 0)
+        {
+            MIDImessage(controlChange, pedalMIDI, pedalOn);
+            digitalOldState[i] = digitalNewState[i];
+        }
+        else if (digitalNewState[i] == 0 && digitalOldState[i] == 1)
+        {
+            MIDImessage(controlChange, pedalMIDI, pedalOff);
+            digitalOldState[i] = digitalNewState[i];
+        }
+    }
+    //read instrument (channel) switch
+    for (int i = (totalChannels + shifterN + controlN); i < (totalChannels + shifterN + controlN + 1); i++)
+    {
+        writeDigitalMux(i);
+        digitalNewState[i] = digitalRead(readDigitalMux);
+        if (digitalNewState[i] == 1 && digitalOldState[i] == 0)
+        {
+            MIDImessage(controlChange, switchMIDI, pedalOn);
+            digitalOldState[i] = digitalNewState[i];
+        }
+        else if (digitalNewState[i] == 0 && digitalOldState[i] == 1)
+        {
+            digitalOldState[i] = digitalNewState[i];
+        }
+    }
+    //read single dial  - probably hook this up to volume, if there can be a general volume
     dial00NewState = analogRead(dial00);
-    if (abs(dial00OldState - dial00NewState) > 5){
-      processedDial00 = dialScale * dial00NewState;
-      MIDImessage(controlChange, 2, processedDial00);
-      dial00OldState = dial00NewState;
+    if (abs(dial00OldState - dial00NewState) > 5)
+    {
+        processedDial00 = dialScale * dial00NewState;
+        MIDImessage(controlChange, 2, processedDial00);
+        dial00OldState = dial00NewState;
+    }
+    //read rotary switch
+    int dir = encoder_data(); // Check for rotation
+
+    if (dir == 1) // If its forward...
+    {
+        counter++; // Increment the counter
+        Serial.println(counter);
+        counter = counter % (channelN * 2);
+        channelVal = counter / 2;
+    }
+    else if (dir == -1) // If its backward...
+    {
+        counter--; // Decrement the counter
+        Serial.println(counter);
+        if (counter < 0)
+        {
+            counter = 2 * channelN - 2;
+        }
+        channelVal = counter / 2;
+    }
+    //read dial multiplexer
+    //this set of dials will do different things depending on the encoder
+    for (int i = 0; i < totalDials; i++)
+    {
+        writeAnalogMux(i);
+        analogNewState[i] = analogRead(readAnalogMux);
+        if (abs(analogNewState[i] - analogOldState[i]) > 5)
+        {
+            processedDial = dialScale * analogNewState[i];
+            MIDImessage(controlChange, (3 + i + channelVal), processedDial);
+            analogOldState[i] = analogNewState[i];
+        }
     }
 }
 
 //send MIDI message
-void MIDImessage(int command, int MIDInote, int MIDIvelocity) {
-  //Serial.println(command);
-  //Serial.println(MIDInote);
-  //Serial.println(MIDIvelocity);
-  Serial.write(command);//send note on or note off command
-  Serial.write(MIDInote);//send pitch data
-  Serial.write(MIDIvelocity);//send velocity data
+void MIDImessage(int command, int MIDInote, int MIDIvelocity)
+{
+    //Serial.println(command);
+    //Serial.println(MIDInote);
+    //Serial.println(MIDIvelocity);
+    Serial.write(command);      //send note on or note off command
+    Serial.write(MIDInote);     //send pitch data
+    Serial.write(MIDIvelocity); //send velocity data
 }
