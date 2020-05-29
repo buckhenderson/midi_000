@@ -7,7 +7,7 @@ int processedDial;
 int channelVal = 0;
 int channelN = 3;
 int counter = 0;
-int totalDials = 2; //number of analog dials
+int totalDials = 8; //number of analog dials
 int totalRows = 2;  //number of theoretical rows of dials (these will be switched by the rotary encoder)
 int totalChannels = 5;
 int shifterN = 2;
@@ -49,8 +49,8 @@ int digitalOldState[9] = {};
 int digitalNewState[9] = {};
 
 int dials[2] = {};
-int analogOldState[2];
-int analogNewState[2];
+int analogOldState[8];
+int analogNewState[8];
 
 int digitalA = 0; //Address pin A
 int digitalB = 0; //Address pin B
@@ -62,6 +62,8 @@ int analogC = 0;
 
 int note0 = 60;
 
+int analogInputs[8] = {A1, A2, A3, A4, A5, A6, A7, A8};
+
 void setup()
 {
     Serial.begin(38400);
@@ -72,12 +74,16 @@ void setup()
     pinMode(digitalAddressB, OUTPUT);
     pinMode(digitalAddressC, OUTPUT);
     pinMode(digitalAddressD, OUTPUT);
-    pinMode(analogAddressA, OUTPUT);
-    pinMode(analogAddressB, OUTPUT);
-    pinMode(analogAddressC, OUTPUT);
     // Prepare read pins
     pinMode(readDigitalMux, INPUT);
-    pinMode(readAnalogMux, INPUT);
+    pinMode(analogInputs[0], INPUT);
+    pinMode(analogInputs[1], INPUT);
+    pinMode(analogInputs[2], INPUT);
+    pinMode(analogInputs[3], INPUT);
+    pinMode(analogInputs[4], INPUT);
+    pinMode(analogInputs[5], INPUT);
+    pinMode(analogInputs[6], INPUT);
+    pinMode(analogInputs[7], INPUT);
     pinMode(dial00, INPUT);
 }
 
@@ -95,17 +101,17 @@ void writeDigitalMux(int i)
     digitalWrite(digitalAddressD, digitalD);
 }
 
-void writeAnalogMux(int i)
-{
-    analogA = bitRead(i, 0); //Take first bit from binary value of i channel.
-    analogB = bitRead(i, 1); //Take second bit from binary value of i channel.
-    analogC = bitRead(i, 2); //Take third bit from value of i channel.
+// void writeAnalogMux(int i)
+// {
+//     analogA = bitRead(i, 0); //Take first bit from binary value of i channel.
+//     analogB = bitRead(i, 1); //Take second bit from binary value of i channel.
+//     analogC = bitRead(i, 2); //Take third bit from value of i channel.
 
-    //Write address to mux
-    digitalWrite(analogAddressA, analogA);
-    digitalWrite(analogAddressB, analogB);
-    digitalWrite(analogAddressC, analogC);
-}
+//     //Write address to mux
+//     digitalWrite(analogAddressA, analogA);
+//     digitalWrite(analogAddressB, analogB);
+//     digitalWrite(analogAddressC, analogC);
+// }
 
 void loop()
 {
@@ -192,14 +198,12 @@ void loop()
     if (dir == 1) // If its forward...
     {
         counter++; // Increment the counter
-        Serial.println(counter);
         counter = counter % (channelN * 2);
         channelVal = counter / 2;
     }
     else if (dir == -1) // If its backward...
     {
         counter--; // Decrement the counter
-        Serial.println(counter);
         if (counter < 0)
         {
             counter = 2 * channelN - 2;
@@ -210,12 +214,12 @@ void loop()
     //this set of dials will do different things depending on the encoder
     for (int i = 0; i < totalDials; i++)
     {
-        writeAnalogMux(i);
-        analogNewState[i] = analogRead(readAnalogMux);
+        //writeAnalogMux(i);
+        analogNewState[i] = analogRead(analogInputs[i]);
         if (abs(analogNewState[i] - analogOldState[i]) > 5)
         {
             processedDial = dialScale * analogNewState[i];
-            MIDImessage(controlChange, (3 + i + channelVal), processedDial);
+            MIDImessage(controlChange, (3 + i + channelVal * totalDials), 127 - processedDial);
             analogOldState[i] = analogNewState[i];
         }
     }

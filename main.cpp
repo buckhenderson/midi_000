@@ -36,7 +36,7 @@ void loop() {
     digitalWrite(led1Pin, HIGH);
     MIDImessage(noteON, 62, velocity);
     oldButton1State = newButton1State;
-  } else if (newButton1State == LOW && oldButton1State == HIGH){
+  } else if (newButton1State == LOW el&& oldButton1State == HIGH){
     digitalWrite(led1Pin, LOW);
     MIDImessage(noteOFF, 62, velocity);
     oldButton1State = newButton1State;

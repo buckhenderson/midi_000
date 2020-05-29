@@ -9,8 +9,7 @@ try:
     with mido.open_input('loopMIDI Port 0') as inport:
         while True:
             for msg in inport:
-                print(msg)
-                #print(dir(msg))
+                print('incoming msg: {}'.format(msg))
                 if msg.type == 'control_change' and msg.control == 1:
                     channel += 1
                     # channel = 0
@@ -19,9 +18,7 @@ try:
                 else:
                     msg_copy = msg
                     msg_copy.channel = channel
-                    # output = mido.Message(msg.type, note=msg.note, velocity=msg.velocity, channel=2)
                     port2.send(msg_copy)
-                    print(msg_copy)
-                    print('sent on channel {}'.format(channel))
+                    print('outgoing msg: {}'.format(msg_copy))
 except:
     pass
