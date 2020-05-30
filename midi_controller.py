@@ -8,7 +8,7 @@ port2 = mido.open_output('loopMIDI Port 2 4')
 global channel
 channel = 2
 global channel_max
-channel_max = 3
+channel_max = 5
 
 global stop
 stop = False
