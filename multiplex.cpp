@@ -24,6 +24,7 @@ int pedal = 7;
 int pedalMIDI = 64;
 int instrumentShift = 8;
 int switchMIDI = 1;
+int metronomeCC = 127;
 int dial00 = A0;
 int dial00ReadVal;
 float dialScale = 127.0 / 1023.0;
@@ -64,6 +65,22 @@ int note0 = 60;
 
 int analogInputs[8] = {A1, A2, A3, A4, A5, A6, A7, A8};
 
+//metronome variables
+long startTime;
+long currentTime;
+int bpm = 120;
+int tickRate;
+int metronomeOnPin = 31;
+int metronomeOnOld = 0;
+int metronomeOnNew = 0;
+int metronomeDownPin = 33;
+int metronomeDownOld = 0;
+int metronomeDownNew = 0;
+int metronomeUpPin = 35;
+int metronomeUpOld = 0;
+int metronomeUpNew = 0;
+bool metronomeBool = false;
+
 void setup()
 {
     Serial.begin(38400);
@@ -84,8 +101,59 @@ void setup()
     pinMode(analogInputs[5], INPUT);
     pinMode(analogInputs[6], INPUT);
     pinMode(analogInputs[7], INPUT);
+    //metronome read pins
+    pinMode(metronomeOnPin, INPUT);
+    pinMode(metronomeDownPin, INPUT);
+    pinMode(metronomeUpPin, INPUT);
+    //main volume dial
     pinMode(dial00, INPUT);
 }
+
+
+void metronome()
+{
+    metronomeOnNew = digitalRead(metronomeOnPin);
+    if (metronomeOnNew != metronomeOnOld && metronomeOnOld == 0)
+    {
+        metronomeBool = !metronomeBool;
+        metronomeOnOld = metronomeOnNew;
+    }
+    if (metronomeOnNew != metronomeOnOld && metronomeOnOld == 1)
+    {
+        metronomeOnOld = metronomeOnNew;
+    }
+    if (metronomeBool)
+    {
+        metronomeUpNew = digitalRead(metronomeUpPin);
+        if (metronomeUpNew != metronomeUpOld && metronomeUpOld == 0)
+        {
+            bpm++;
+            metronomeUpOld = metronomeUpNew;
+        }
+        if (metronomeUpNew != metronomeUpOld && metronomeUpOld == 1)
+        {
+            metronomeUpOld = metronomeUpNew;
+        }
+        metronomeDownNew = digitalRead(metronomeDownPin);
+        if (metronomeDownNew != metronomeDownOld && metronomeDownOld == 0)
+        {
+            bpm--;
+            metronomeDownOld = metronomeDownNew;
+        }
+        if (metronomeDownNew != metronomeDownOld && metronomeDownOld == 1)
+        {
+            metronomeDownOld = metronomeDownNew;
+        }
+    }
+    tickRate = 1000.0 * (float)60 / (float)bpm;
+    currentTime = millis();
+    if ((currentTime - startTime > tickRate) && metronomeBool)
+    {
+        MIDImessage(controlChange, metronomeCC, 1); // velocity doesn't matter
+        startTime = millis();
+    }
+}
+
 
 void writeDigitalMux(int i)
 {
@@ -115,6 +183,7 @@ void writeDigitalMux(int i)
 
 void loop()
 {
+    metronome();
     //read keys
     for (int i = 0; i < totalChannels; i++)
     {

@@ -2,13 +2,13 @@ long startTime;
 long currentTime;
 int bpm = 120;
 int tickRate;
-int metronomeOnPin = 7;
+int metronomeOnPin = 31;
 int metronomeOnOld = 0;
 int metronomeOnNew = 0;
-int metronomeDownPin = 8;
+int metronomeDownPin = 33;
 int metronomeDownOld = 0;
 int metronomeDownNew = 0;
-int metronomeUpPin = 9;
+int metronomeUpPin = 35;
 int metronomeUpOld = 0;
 int metronomeUpNew = 0;
 bool metronomeBool = false;
@@ -25,7 +25,6 @@ void setup()
 
 void metronome()
 {
-    // put your main code here, to run repeatedly:
     metronomeOnNew = digitalRead(metronomeOnPin);
     if (metronomeOnNew != metronomeOnOld && metronomeOnOld == 0)
     {
