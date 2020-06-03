@@ -23,7 +23,7 @@ void setup()
     pinMode(metronomeUpPin, INPUT);
 }
 
-void loop()
+void metronome()
 {
     // put your main code here, to run repeatedly:
     metronomeOnNew = digitalRead(metronomeOnPin);
@@ -70,4 +70,9 @@ void loop()
         Serial.println("tick");
         startTime = millis();
     }
+}
+
+void loop()
+{
+    metronome();
 }
