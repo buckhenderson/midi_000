@@ -3,13 +3,15 @@
 const int encoderPin_A = 20;
 const int encoderPin_B = 21;
 
+int instrumentSwitchOldState = 0;
+int instrumentSwitchNewState = 0;
 int processedDial;
 int channelVal = 0;
 int channelN = 3;
 int counter = 0;
 int totalDials = 8; //number of analog dials
 int totalRows = 2;  //number of theoretical rows of dials (these will be switched by the rotary encoder)
-int totalChannels = 5;
+int totalKeys = 13;
 int shifterN = 2;
 int controlN = 1;
 int noteON = 144;        //144 = 10010000 in binary, note on command
@@ -18,19 +20,19 @@ int controlChange = 176; //176 = 10110000 in binary, control change command
 int velocity = 100;
 int pedalOn = 127;
 int pedalOff = 0;
-int shiftUp = 5;
-int shiftDown = 6;
-int pedal = 7;
+int shiftUp = 13;
+int shiftDown = 14;
+int pedal = 15;
 int pedalMIDI = 64;
-int instrumentShift = 8;
+int instrumentSwitchPin = 12;
 int switchMIDI = 1;
 int metronomeCC = 127;
-int dial00 = A0;
-int dial00ReadVal;
+int volumeDialPin = A0;
+int volumeDialReadVal;
 float dialScale = 127.0 / 1023.0;
-int processedDial00;
-int dial00OldState;
-int dial00NewState;
+int processedVolumeDial;
+int volumeDialOldState;
+int volumeDialNewState;
 //set up multiplexers
 //digital
 int digitalAddressA = 2;
@@ -39,17 +41,17 @@ int digitalAddressC = 4;
 int digitalAddressD = 5;
 int readDigitalMux = 6;
 //analog
-int analogAddressA = 27;
-int analogAddressB = 29;
-int analogAddressC = 31;
-int readAnalogMux = A1;
+// int analogAddressA = 27;
+// int analogAddressB = 29;
+// int analogAddressC = 31;
+// int readAnalogMux = A1;
 int readAnalogValue;
 
-int buttons[9] = {};
-int digitalOldState[9] = {};
-int digitalNewState[9] = {};
+int buttons[16] = {};
+int digitalOldState[16] = {};
+int digitalNewState[16] = {};
 
-int dials[2] = {};
+// int dials[2] = {};
 int analogOldState[8];
 int analogNewState[8];
 
@@ -57,13 +59,13 @@ int digitalA = 0; //Address pin A
 int digitalB = 0; //Address pin B
 int digitalC = 0; //Address pin C
 int digitalD = 0; //Address pin D
-int analogA = 0;
-int analogB = 0;
-int analogC = 0;
+// int analogA = 0;
+// int analogB = 0;
+// int analogC = 0;
 
-int note0 = 60;
+int note0 = 59;
 
-int analogInputs[8] = {A1, A2, A3, A4, A5, A6, A7, A8};
+int analogInputPins[8] = {A1, A2, A3, A4, A5, A6, A7, A8};
 
 //metronome variables
 long startTime;
@@ -93,22 +95,21 @@ void setup()
     pinMode(digitalAddressD, OUTPUT);
     // Prepare read pins
     pinMode(readDigitalMux, INPUT);
-    pinMode(analogInputs[0], INPUT);
-    pinMode(analogInputs[1], INPUT);
-    pinMode(analogInputs[2], INPUT);
-    pinMode(analogInputs[3], INPUT);
-    pinMode(analogInputs[4], INPUT);
-    pinMode(analogInputs[5], INPUT);
-    pinMode(analogInputs[6], INPUT);
-    pinMode(analogInputs[7], INPUT);
+    pinMode(analogInputPins[0], INPUT);
+    pinMode(analogInputPins[1], INPUT);
+    pinMode(analogInputPins[2], INPUT);
+    pinMode(analogInputPins[3], INPUT);
+    pinMode(analogInputPins[4], INPUT);
+    pinMode(analogInputPins[5], INPUT);
+    pinMode(analogInputPins[6], INPUT);
+    pinMode(analogInputPins[7], INPUT);
     //metronome read pins
     pinMode(metronomeOnPin, INPUT);
     pinMode(metronomeDownPin, INPUT);
     pinMode(metronomeUpPin, INPUT);
     //main volume dial
-    pinMode(dial00, INPUT);
+    pinMode(volumeDialPin, INPUT);
 }
-
 
 void metronome()
 {
@@ -154,7 +155,6 @@ void metronome()
     }
 }
 
-
 void writeDigitalMux(int i)
 {
     digitalA = bitRead(i, 0); //Take first bit from binary value of i channel.
@@ -185,23 +185,23 @@ void loop()
 {
     metronome();
     //read keys
-    for (int i = 0; i < totalChannels; i++)
+    for (int i = 0; i < totalKeys; i++)
     {
         writeDigitalMux(i);
         digitalNewState[i] = digitalRead(readDigitalMux);
         if (digitalNewState[i] == 1 && digitalOldState[i] == 0)
         {
-            MIDImessage(noteON, note0 + i, velocity);
+            MIDImessage(noteON, note0 + (13 - i), velocity);
             digitalOldState[i] = digitalNewState[i];
         }
         else if (digitalNewState[i] == 0 && digitalOldState[i] == 1)
         {
-            MIDImessage(noteOFF, note0 + i, velocity);
+            MIDImessage(noteOFF, note0 + (13 - i), velocity);
             digitalOldState[i] = digitalNewState[i];
         }
     }
     //read shifter
-    for (int i = totalChannels; i < (totalChannels + shifterN); i++)
+    for (int i = totalKeys; i < (totalKeys + shifterN); i++)
     {
         writeDigitalMux(i);
         digitalNewState[i] = digitalRead(readDigitalMux);
@@ -223,7 +223,7 @@ void loop()
         }
     }
     //read pedal
-    for (int i = (totalChannels + shifterN); i < (totalChannels + shifterN + controlN); i++)
+    for (int i = (totalKeys + shifterN); i < (totalKeys + shifterN + controlN); i++)
     {
         writeDigitalMux(i);
         digitalNewState[i] = digitalRead(readDigitalMux);
@@ -239,27 +239,23 @@ void loop()
         }
     }
     //read instrument (channel) switch
-    for (int i = (totalChannels + shifterN + controlN); i < (totalChannels + shifterN + controlN + 1); i++)
+    instrumentSwitchNewState = digitalRead(instrumentSwitchPin);
+    if (instrumentSwitchNewState == 1 && instrumentSwitchOldState == 0)
     {
-        writeDigitalMux(i);
-        digitalNewState[i] = digitalRead(readDigitalMux);
-        if (digitalNewState[i] == 1 && digitalOldState[i] == 0)
-        {
-            MIDImessage(controlChange, switchMIDI, pedalOn);
-            digitalOldState[i] = digitalNewState[i];
-        }
-        else if (digitalNewState[i] == 0 && digitalOldState[i] == 1)
-        {
-            digitalOldState[i] = digitalNewState[i];
-        }
+        MIDImessage(controlChange, switchMIDI, pedalOn);
+        instrumentSwitchOldState = instrumentSwitchNewState;
+    }
+    else if (instrumentSwitchNewState == 0 && instrumentSwitchOldState == 1)
+    {
+        instrumentSwitchOldState = instrumentSwitchNewState;
     }
     //read single dial  - probably hook this up to volume, if there can be a general volume
-    dial00NewState = analogRead(dial00);
-    if (abs(dial00OldState - dial00NewState) > 5)
+    volumeDialNewState = analogRead(volumeDialPin);
+    if (abs(volumeDialOldState - volumeDialNewState) > 5)
     {
-        processedDial00 = dialScale * dial00NewState;
-        MIDImessage(controlChange, 2, processedDial00);
-        dial00OldState = dial00NewState;
+        processedVolumeDial = dialScale * volumeDialNewState;
+        MIDImessage(controlChange, 2, processedVolumeDial);
+        volumeDialOldState = volumeDialNewState;
     }
     //read rotary switch
     int dir = encoder_data(); // Check for rotation
@@ -284,7 +280,7 @@ void loop()
     for (int i = 0; i < totalDials; i++)
     {
         //writeAnalogMux(i);
-        analogNewState[i] = analogRead(analogInputs[i]);
+        analogNewState[i] = analogRead(analogInputPins[i]);
         if (abs(analogNewState[i] - analogOldState[i]) > 5)
         {
             processedDial = dialScale * analogNewState[i];
