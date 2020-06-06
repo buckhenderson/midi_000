@@ -3,6 +3,15 @@
 const int encoderPin_A = 20;
 const int encoderPin_B = 21;
 
+int metronomeResetPin = 41;
+int metronomeDown5Pin = 37;
+int metronomeUp5Pin = 39;
+int metronomeResetOldState = 0;
+int metronomeResetNewState = 0;
+int metronomeDown5OldState = 0;
+int metronomeDown5NewState = 0;
+int metronomeUp5OldState = 0;
+int metronomeUp5NewState = 0;
 int instrumentSwitchOldState = 0;
 int instrumentSwitchNewState = 0;
 int processedDial;
@@ -107,6 +116,9 @@ void setup()
     pinMode(metronomeOnPin, INPUT);
     pinMode(metronomeDownPin, INPUT);
     pinMode(metronomeUpPin, INPUT);
+    pinMode(metronomeResetPin, INPUT);
+    pinMode(metronomeDown5Pin, INPUT);
+    pinMode(metronomeUp5Pin, INPUT);
     //main volume dial
     pinMode(volumeDialPin, INPUT);
 }
@@ -144,6 +156,36 @@ void metronome()
         if (metronomeDownNew != metronomeDownOld && metronomeDownOld == 1)
         {
             metronomeDownOld = metronomeDownNew;
+        }
+        metronomeResetNewState = digitalRead(metronomeResetPin);
+        if (metronomeResetNewState != metronomeResetOldState && metronomeResetOldState == 0)
+        {
+            bpm = 120;
+            metronomeResetOldState = metronomeResetNewState;
+        }
+        if (metronomeResetNewState != metronomeResetOldState && metronomeResetOldState == 1)
+        {
+            metronomeResetOldState = metronomeResetNewState;
+        }
+        metronomeDown5NewState = digitalRead(metronomeDown5Pin);
+        if (metronomeDown5NewState != metronomeDown5OldState && metronomeDown5OldState == 0)
+        {
+            bpm = bpm - 5;
+            metronomeDown5OldState = metronomeDown5NewState;
+        }
+        if (metronomeDown5NewState != metronomeDown5OldState && metronomeDown5OldState == 1)
+        {
+            metronomeDown5OldState = metronomeDown5NewState;
+        }
+        metronomeUp5NewState = digitalRead(metronomeUp5Pin);
+        if (metronomeUp5NewState != metronomeUp5OldState && metronomeUp5OldState == 0)
+        {
+            bpm = bpm + 5;
+            metronomeUp5OldState = metronomeUp5NewState;
+        }
+        if (metronomeUp5NewState != metronomeUp5OldState && metronomeUp5OldState == 1)
+        {
+            metronomeUp5OldState = metronomeUp5NewState;
         }
     }
     tickRate = 1000.0 * (float)60 / (float)bpm;
