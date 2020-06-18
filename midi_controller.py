@@ -4,7 +4,7 @@ import mido
 mido.get_input_names()
 mido.get_output_names()
 global port2
-port2 = mido.open_output('loopMIDI Port 2 3')
+port2 = mido.open_output('loopMIDI Port 2 4')
 global channel
 channel = 2
 global channel_max
@@ -15,7 +15,7 @@ stop = False
 
 def device():
     try:
-        with mido.open_input('loopMIDI Port 1 1') as inport:
+        with mido.open_input('loopMIDI Port 1 2') as inport:
             global channel
             global channel_max
             print('opened input')
@@ -83,7 +83,7 @@ def piano():
 try:
     midi_thread = threading.Thread(target=device)
     midi_thread.start()
-    # piano_thread = threading.Thread(target=piano)
-    # piano_thread.start()
+    piano_thread = threading.Thread(target=piano)
+    piano_thread.start()
 except KeyboardInterrupt:
     pass
